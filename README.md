@@ -25,7 +25,7 @@ To try it on a computer, run a local server from this folder (for example
 
 ## Rules
 
-From the original rules sheet:
+From the game's designer (the rules sheet):
 
 1. Two players. Pick a color, purple or blue. That is your team.
 2. Set up your team on your Start row and pick one Roman to be the
@@ -34,28 +34,26 @@ From the original rules sheet:
 4. On your turn, roll the dice:
    - **1, 2 or 3**: move one Roman exactly that many squares left or right.
    - **4, 5 or 6**: move one Roman exactly that many squares forward.
-5. The goal of the game is to defeat the other team's Commander.
+5. **Battle:** if your Roman lands on the same square as an enemy Roman, both
+   players roll. The higher number knocks the other Roman out. A tie means
+   roll again. If the attacker loses, the attacker is out.
+6. The goal of the game is to defeat the other team's Commander. A Commander
+   that attacks and loses its battle loses the game too.
 
-The back of the sheet ("look on back!") wasn't available, so the game fills
-the gaps with these house rules:
+House rules that fill the remaining gaps:
 
-- **Bonk!** Land on an enemy Roman to knock it out. You can't land on your own
-  Roman. Romans jump over anything in their way.
+- You can't land on your own Roman. Romans jump over anything in their way.
 - **Romans can't swim.** You can't stop on the pond or on the black corner
   square, but you can jump over them.
 - **Turn around.** If a march of 4 to 6 would go past the end of the board,
   the Roman stops on the last row and turns around, so "forward" is now the
   other way (a small arrow shows this). Without this rule Romans got stranded
   near the far edge and about a third of test games could never be won.
-- **Dice duel** (optional, in Settings): when a Roman lands on an enemy, both
-  teams roll and the higher roll wins the battle. A Commander that attacks and
-  loses also loses the game.
 - **Stuck games.** If no Roman can ever reach a Commander, or nobody battles for
   40 turns, the team with more Romans left wins (equal numbers is a draw).
 - If none of your Romans can make the move you rolled, your turn is skipped.
 
-All rules live in [`js/rules.js`](js/rules.js), so they are easy to change if
-the back of the sheet says something different.
+All rules live in [`js/rules.js`](js/rules.js), so they are easy to change.
 
 ## How it's built
 
@@ -88,7 +86,7 @@ Requires Node.js 18 or newer:
 npm test
 ```
 
-The tests cover the movement rules, battles, duels, turning around, winning and
+The tests cover the movement rules, battles, turning around, winning and
 the computer player. They also play hundreds of computer-vs-computer games to
 check that every game finishes.
 

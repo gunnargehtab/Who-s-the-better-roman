@@ -19,9 +19,9 @@ function seeded(seed) {
 const die = (rng) => 1 + Math.floor(rng() * 6);
 
 // Play a whole game with the computer on both sides.
-function playGame({ seed, purple = 'tricky', blue = 'tricky', battle = 'bonk' }) {
+function playGame({ seed, purple = 'tricky', blue = 'tricky' }) {
   const rng = seeded(seed);
-  const s = R.newGame({ rng, battle });
+  const s = R.newGame({ rng });
   R.chooseCommander(s, AI.chooseCommander(s, 'purple', purple, rng));
   R.chooseCommander(s, AI.chooseCommander(s, 'blue', blue, rng));
   while (s.phase === 'rolloff') {
@@ -59,7 +59,7 @@ function setup(first) {
   return s;
 }
 
-test('both levels take a winning hit on the Commander when they can', () => {
+test('both levels attack the Commander when they can reach it', () => {
   for (const level of ['easy', 'tricky']) {
     let wins = 0;
     for (let i = 0; i < 40; i++) {
@@ -101,10 +101,10 @@ test('computer-only games always finish with a result', () => {
   const results = { purple: 0, blue: 0, draw: 0 };
   const reasons = {};
   const configs = [
-    { purple: 'tricky', blue: 'tricky', battle: 'bonk' },
-    { purple: 'easy', blue: 'tricky', battle: 'bonk' },
-    { purple: 'tricky', blue: 'easy', battle: 'duel' },
-    { purple: 'easy', blue: 'easy', battle: 'duel' }
+    { purple: 'tricky', blue: 'tricky' },
+    { purple: 'easy', blue: 'tricky' },
+    { purple: 'tricky', blue: 'easy' },
+    { purple: 'easy', blue: 'easy' }
   ];
   let n = 0;
   for (const cfg of configs) {

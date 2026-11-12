@@ -58,11 +58,10 @@
     }
   };
 
-  var settings = { sound: 'on', battle: 'bonk', seats: 'side', soloTeam: 'blue', soloLevel: 'easy' };
+  var settings = { sound: 'on', seats: 'side', soloTeam: 'blue', soloLevel: 'easy' };
   (function () {
     var s = store.get(SETTINGS_KEY) || {};
     if (s.sound === 'off') settings.sound = 'off';
-    if (s.battle === 'duel') settings.battle = 'duel';
     if (s.seats === 'across') settings.seats = 'across';
     if (s.soloTeam === 'purple') settings.soloTeam = 'purple';
     if (s.soloLevel === 'tricky') settings.soloLevel = 'tricky';
@@ -582,7 +581,7 @@
   function startGame(opts) {
     epoch += 1;
     closeAllScreens();
-    var state = opts.state || R.newGame({ battle: settings.battle, rng: random });
+    var state = opts.state || R.newGame({ rng: random });
     G = {
       mode: opts.mode,
       human: opts.mode === '1p' ? (opts.human === 'purple' ? 'purple' : 'blue') : null,
@@ -792,7 +791,7 @@
     showTargets(mine);
     var attack = mine.some(function (m) { return m.target; });
     var text = mine.length > 1 ? 'Tap a glowing square: left or right?' : 'Tap the glowing square to move.';
-    if (attack) text = 'Tap the swords to bonk an enemy!';
+    if (attack) text = 'Tap the swords to battle an enemy!';
     setHint(st().turn, text);
   }
 
@@ -903,24 +902,14 @@
       runDuel();
       return;
     }
-    if (res.captured) {
-      await knockOut(res.captured, m.to);
-      if (!ok()) return;
-    } else {
-      Sound.land();
-    }
-    if (res.turned && st().phase !== 'over') {
+    Sound.land();
+    if (res.turned) {
       await turnAroundFx(m.id);
       if (!ok()) return;
     }
     renderPieces();
     renderDocks();
     save();
-    if (st().phase === 'over') {
-      await wait(800);
-      if (ok()) showWin();
-      return;
-    }
     await wait(300);
     if (ok()) finishTurn();
   }
@@ -987,15 +976,51 @@
     doMove(m);
   }
 
-  /* ---------------- dice duel ---------------- */
-
-  var duelTap = null;
+  /* ---------------- battles ---------------- */
 
   function fillDuelist(box, p, role) {
     box.className = 'duelist team-' + p.team;
+    // Across a table, the top player's side of the battle faces them.
+    box.classList.toggle('flip', el.app.classList.contains('seats-across') && p.team !== bottomTeam());
     $('.duel-roman', box).src = Art.roman(p.team, p.face, p.commander);
     $('.duel-die', box).src = Art.die(0);
     $('.duel-name', box).textContent = name(p.team) + ' ' + role + (p.commander ? ' (Commander)' : '');
+  }
+
+  // One side of a battle rolls: a player taps their own die, the computer rolls by itself.
+  function battleRoll(box, team) {
+    var ok = guard();
+    var btn = $('.duel-roll', box);
+    var img = $('.duel-die', box);
+    var label = $('.duel-roll-label', box);
+    img.src = Art.die(0);
+    return new Promise(function (resolve) {
+      function go() {
+        btn.onclick = null;
+        btn.disabled = true;
+        btn.classList.remove('ready');
+        label.textContent = 'Rolling';
+        spinDie(img).then(function (v) {
+          label.textContent = name(team) + ': ' + v;
+          resolve(v);
+        });
+      }
+      if (isAI(team)) {
+        btn.disabled = true;
+        btn.classList.remove('ready');
+        label.textContent = 'Computer';
+        wait(900).then(function () { if (ok()) go(); });
+      } else {
+        btn.disabled = false;
+        btn.classList.add('ready');
+        label.textContent = 'Roll!';
+        btn.setAttribute('aria-label', 'Roll ' + name(team) + "'s battle die");
+        btn.onclick = function () {
+          Sound.unlock();
+          go();
+        };
+      }
+    });
   }
 
   function spinDie(img) {
@@ -1036,35 +1061,40 @@
     var boxA = $('#duel-a');
     var boxD = $('#duel-d');
     var msg = $('#duel-msg');
-    var btn = $('#btn-duel-roll');
     fillDuelist(boxA, att, 'attacks');
     fillDuelist(boxD, def, 'defends');
-    msg.textContent = 'Both Romans roll. The higher roll wins!';
-    R.TEAMS.forEach(function (team) { setHint(team, 'Battle! Roll the battle dice.'); });
-    btn.hidden = false;
-    btn.disabled = false;
+    msg.textContent = 'Both players roll. The higher number wins!';
+    R.TEAMS.forEach(function (team) {
+      setHint(team, isAI(team) ? 'Battle! The computer rolls its die.' : 'Battle! Roll your battle die.');
+    });
     openScreen('screen-duel');
     Sound.duel();
     for (;;) {
-      await new Promise(function (resolve) { duelTap = resolve; });
-      if (!ok()) return;
-      btn.disabled = true;
-      var rolls = await Promise.all([spinDie($('.duel-die', boxA)), spinDie($('.duel-die', boxD))]);
+      var first = null;
+      var note = function (team, v) {
+        if (first) return;
+        first = team;
+        msg.textContent = name(team) + ' rolled ' + v + '. Now ' + name(R.enemyOf(team)) + ' rolls!';
+      };
+      var rolls = await Promise.all([
+        battleRoll(boxA, att.team).then(function (v) { note(att.team, v); return v; }),
+        battleRoll(boxD, def.team).then(function (v) { note(def.team, v); return v; })
+      ]);
       if (!ok()) return;
       var res = R.resolveDuel(st(), rolls[0], rolls[1]);
       save();
       if (res.tie) {
-        msg.textContent = 'Tie! Roll again!';
+        msg.textContent = 'Tie! You both rolled ' + rolls[0] + '. Roll again!';
         Sound.nope();
-        btn.disabled = false;
+        await wait(1300);
+        if (!ok()) return;
         continue;
       }
       var winner = R.getPiece(st(), res.winnerId);
       (res.loserId === att.id ? boxA : boxD).classList.add('lost');
-      msg.textContent = name(winner.team) + ' wins the battle!';
+      msg.textContent = name(winner.team) + ' wins the battle, ' + Math.max(rolls[0], rolls[1]) + ' to ' + Math.min(rolls[0], rolls[1]) + '!';
       Sound.land();
-      btn.hidden = true;
-      await wait(1400);
+      await wait(1500);
       if (!ok()) return;
       closeScreen('screen-duel');
       await knockOut(res.loserId, to);
@@ -1243,11 +1273,6 @@
     $$('#screen-settings [data-setting]').forEach(function (b) {
       b.setAttribute('aria-checked', String(settings[b.getAttribute('data-setting')] === b.getAttribute('data-value')));
     });
-    var help = settings.battle === 'duel'
-      ? 'Dice duel: both teams roll and the higher roll wins the battle.'
-      : 'Bonk!: land on an enemy Roman to knock it out.';
-    if (G && st().battle !== settings.battle && st().phase !== 'over') help += ' This starts with your next game.';
-    $('#battle-help').textContent = help;
   }
 
   function applySound() {
@@ -1413,15 +1438,6 @@
       Sound.click();
       confirmAction = null;
       closeScreen('screen-confirm');
-    });
-
-    $('#btn-duel-roll').addEventListener('click', function () {
-      Sound.unlock();
-      if (duelTap) {
-        var f = duelTap;
-        duelTap = null;
-        f();
-      }
     });
 
     $('#btn-win-again').addEventListener('click', function () {

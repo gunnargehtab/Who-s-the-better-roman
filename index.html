@@ -122,7 +122,7 @@
       </li>
       <li>
         <div class="rule-art"><span class="ico rule-ico rule-ico-big" data-icon="swords"></span></div>
-        <p><b>Bonk!</b> Land on an enemy Roman to knock it out.</p>
+        <p><b>Battle!</b> Land on an enemy Roman and you both roll the dice. The higher number knocks the other Roman out. A tie means roll again.</p>
       </li>
       <li>
         <div class="rule-art"><img class="tile-img" alt="" data-art="tile:W"><img class="tile-img" alt="" data-art="tile:X"></div>
@@ -134,7 +134,6 @@
       </li>
     </ol>
     <div class="rules-extra">
-      <p><b>Dice duel</b> (turn it on in Settings): when a Roman lands on an enemy, both teams roll and the higher roll wins the battle.</p>
       <p><b>Stuck?</b> If no Roman can ever reach a Commander, or nobody battles for 40 turns, the team with more Romans left wins.</p>
     </div>
     <div class="panel-actions">
@@ -153,14 +152,6 @@
         <button type="button" role="radio" data-setting="sound" data-value="on">On</button>
         <button type="button" role="radio" data-setting="sound" data-value="off">Off</button>
       </div>
-    </div>
-    <div class="setting">
-      <p class="setting-label" id="lbl-battle">When Romans meet</p>
-      <div class="seg" role="radiogroup" aria-labelledby="lbl-battle">
-        <button type="button" role="radio" data-setting="battle" data-value="bonk">Bonk!</button>
-        <button type="button" role="radio" data-setting="battle" data-value="duel">Dice duel</button>
-      </div>
-      <p class="setting-help" id="battle-help"></p>
     </div>
     <div class="setting">
       <p class="setting-label" id="lbl-seats">2 players sit</p>
@@ -202,19 +193,24 @@
   </div>
 </section>
 
-<!-- Dice duel -->
+<!-- Battle: each player rolls their own die -->
 <section class="screen screen-duel" id="screen-duel" hidden aria-labelledby="duel-title">
   <div class="panel duel-panel">
     <h2 id="duel-title">Battle!</h2>
     <div class="duel-row">
-      <div class="duelist" id="duel-a"><img class="duel-roman" alt=""><img class="duel-die" alt=""><span class="duel-name"></span></div>
+      <div class="duelist" id="duel-a">
+        <img class="duel-roman" alt="">
+        <span class="duel-name"></span>
+        <button class="duel-roll" type="button"><img class="duel-die" alt=""><span class="duel-roll-label"></span></button>
+      </div>
       <span class="ico duel-swords" data-icon="swords"></span>
-      <div class="duelist" id="duel-d"><img class="duel-roman" alt=""><img class="duel-die" alt=""><span class="duel-name"></span></div>
+      <div class="duelist" id="duel-d">
+        <img class="duel-roman" alt="">
+        <span class="duel-name"></span>
+        <button class="duel-roll" type="button"><img class="duel-die" alt=""><span class="duel-roll-label"></span></button>
+      </div>
     </div>
     <p class="duel-msg" id="duel-msg" aria-live="polite"></p>
-    <div class="panel-actions">
-      <button class="btn btn-primary" id="btn-duel-roll" type="button">Roll the battle dice!</button>
-    </div>
   </div>
 </section>
 

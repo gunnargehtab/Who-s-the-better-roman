@@ -6,7 +6,7 @@ const R = require('../js/rules.js');
 
 // A game that is ready to play: both Commanders chosen, `first` to roll.
 function readyGame(opts = {}) {
-  const s = R.newGame({ shuffleFaces: false, battle: opts.battle });
+  const s = R.newGame({ shuffleFaces: false });
   R.chooseCommander(s, opts.purpleCommander || 'p2');
   R.chooseCommander(s, opts.blueCommander || 'b2');
   const first = opts.first || 'blue';
@@ -148,7 +148,7 @@ test('Romans jump over other Romans but never land on a team mate', () => {
   assert.equal(R.movesForPiece(s, R.getPiece(s, 'b2'), 1).length, 0);
 });
 
-test('landing on an enemy knocks it out (bonk)', () => {
+test('landing on an enemy starts a battle: the higher roll knocks the other Roman out', () => {
   const s = readyGame({ first: 'blue' });
   put(s, 'b0', 6, 1);
   put(s, 'p0', 2, 1);
@@ -156,13 +156,29 @@ test('landing on an enemy knocks it out (bonk)', () => {
   const move = R.legalMoves(s).find((m) => m.id === 'b0');
   assert.equal(move.target, 'p0');
   const res = R.applyMove(s, move);
-  assert.equal(res.captured, 'p0');
+  assert.deepEqual(res, { type: 'duel', attacker: 'b0', defender: 'p0' });
+  assert.equal(s.phase, 'duel');
+  assert.equal(R.getPiece(s, 'p0').alive, true, 'nobody is out before the dice are rolled');
+  assert.deepEqual([R.getPiece(s, 'b0').r, R.getPiece(s, 'b0').c], [6, 1], 'the attacker has not moved in yet');
+  assert.throws(() => R.endTurn(s), /Cannot end the turn/);
+  const out = R.resolveDuel(s, 5, 2);
+  assert.equal(out.loserId, 'p0');
   assert.equal(R.getPiece(s, 'p0').alive, false);
-  assert.deepEqual([R.getPiece(s, 'b0').r, R.getPiece(s, 'b0').c], [2, 1]);
+  assert.deepEqual([R.getPiece(s, 'b0').r, R.getPiece(s, 'b0').c], [2, 1], 'the winner takes the square');
   assert.equal(R.aliveCount(s, 'purple'), 5);
   R.endTurn(s);
   assert.equal(s.turn, 'purple');
   assert.equal(s.calm, 0);
+});
+
+test('a plain move onto an empty square is not a battle', () => {
+  const s = readyGame({ first: 'blue' });
+  R.setRoll(s, 4);
+  const res = R.applyMove(s, R.legalMoves(s).find((m) => m.id === 'b0'));
+  assert.deepEqual(res, { type: 'move', id: 'b0', turned: false });
+  assert.equal(s.phase, 'moved');
+  R.endTurn(s);
+  assert.equal(s.calm, 1);
 });
 
 test('knocking out the Commander wins the game', () => {
@@ -172,7 +188,8 @@ test('knocking out the Commander wins the game', () => {
   R.setRoll(s, 4);
   const move = R.legalMoves(s).find((m) => m.target === cmd.id);
   assert.ok(move, 'b3 can reach the Commander');
-  const res = R.applyMove(s, move);
+  R.applyMove(s, move);
+  const res = R.resolveDuel(s, 6, 3);
   assert.equal(res.win, true);
   assert.equal(s.phase, 'over');
   assert.equal(s.winner, 'blue');
@@ -206,8 +223,8 @@ test('a Roman may not end its turn early when it can move', () => {
   assert.throws(() => R.endTurn(s), /still possible/);
 });
 
-test('dice duel: higher roll wins, a tie rolls again, losing attacker is out', () => {
-  const s = readyGame({ battle: 'duel', first: 'blue' });
+test('battle: a tie rolls again, and a losing attacker is out', () => {
+  const s = readyGame({ first: 'blue' });
   put(s, 'b0', 6, 1);
   put(s, 'p0', 2, 1);
   R.setRoll(s, 4);
@@ -222,7 +239,7 @@ test('dice duel: higher roll wins, a tie rolls again, losing attacker is out', (
   assert.equal(R.getPiece(s, 'p0').alive, true);
   assert.equal(s.phase, 'moved');
 
-  const t = readyGame({ battle: 'duel', first: 'blue', purpleCommander: 'p0' });
+  const t = readyGame({ first: 'blue', purpleCommander: 'p0' });
   put(t, 'b0', 6, 1);
   put(t, 'p0', 2, 1);
   R.setRoll(t, 4);
@@ -233,8 +250,8 @@ test('dice duel: higher roll wins, a tie rolls again, losing attacker is out', (
   assert.deepEqual([R.getPiece(t, 'b0').r, R.getPiece(t, 'b0').c], [2, 1]);
 });
 
-test('a Commander that attacks and loses a duel loses the game', () => {
-  const s = readyGame({ battle: 'duel', first: 'blue', blueCommander: 'b0' });
+test('a Commander that attacks and loses a battle loses the game', () => {
+  const s = readyGame({ first: 'blue', blueCommander: 'b0' });
   put(s, 'b0', 6, 1);
   put(s, 'p0', 2, 1);
   R.setRoll(s, 4);
@@ -268,8 +285,8 @@ test('the Emperor ends a game with no battles for too long', () => {
   assert.equal(s.winner, 'blue');
 });
 
-test('a winning duel attacker that reaches the edge turns around', () => {
-  const s = readyGame({ battle: 'duel', first: 'blue', purpleCommander: 'p5' });
+test('a winning attacker that reaches the edge turns around', () => {
+  const s = readyGame({ first: 'blue', purpleCommander: 'p5' });
   put(s, 'b0', 4, 1); // p0 waits on Purple's Start row at (0, 1)
   R.setRoll(s, 4);
   const m = R.legalMoves(s).find((x) => x.id === 'b0');
