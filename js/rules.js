@@ -4,17 +4,17 @@
  * Pure game logic with no DOM access, so it runs in the browser and in Node
  * (see tests/). The UI rolls the dice and passes the numbers in.
  *
- * Rules from the hand-written rules sheet:
+ * Rules from the game's designer (the hand-written rules sheet):
  *   - 2 players, Purple vs Blue, each team starts on its own Start row.
  *   - One Roman of each team is the Commander (placed anywhere in the ranks).
  *   - Both roll; the higher roll starts.
  *   - Roll 1-3: move one Roman exactly that many squares left or right.
  *   - Roll 4-6: move one Roman exactly that many squares forward.
+ *   - Moving onto an enemy Roman starts a battle: both players roll and the
+ *     higher number knocks the other Roman out. A tie means roll again.
  *   - Defeat the other team's Commander to win.
  *
- * The back of the sheet wasn't available, so these parts are house rules:
- *   - Landing on an enemy Roman knocks it out ("bonk"), or with the
- *     "duel" option both players roll and the higher roll wins.
+ * House rules that fill gaps in the sheet:
  *   - Romans can't stop on water or the black rock, but may jump over
  *     anything (Romans and terrain) on the way.
  *   - A Roman that would march past the end of the board stops on the last
@@ -109,7 +109,7 @@
   /**
    * Start a new game. Romans are placed on their Start rows and the game
    * waits for each team to choose a Commander (Purple first).
-   * opts.battle: 'bonk' (default) or 'duel'. opts.rng: random function.
+   * opts.rng: random function used to mix up the dice faces.
    */
   function newGame(opts) {
     opts = opts || {};
@@ -132,7 +132,6 @@
     });
     return {
       v: 1,
-      battle: opts.battle === 'duel' ? 'duel' : 'bonk',
       pieces: pieces,
       phase: 'commander', // commander -> rolloff -> roll -> move -> (duel) -> moved -> ... -> over
       turn: 'purple',
@@ -303,8 +302,8 @@
 
   /**
    * Make a move. Returns what happened:
-   *   { type: 'move', id, captured: id|null, win: bool }
-   *   { type: 'duel', attacker, defender }  (duel option: call resolveDuel next)
+   *   { type: 'move', id, turned: bool }
+   *   { type: 'duel', attacker, defender }  (landed on an enemy: call resolveDuel next)
    */
   function applyMove(state, move) {
     if (state.phase !== 'move') throw new Error('Not time to move');
@@ -313,7 +312,7 @@
     var p = getPiece(state, legal.id);
     var target = legal.target ? getPiece(state, legal.target) : null;
 
-    if (target && state.battle === 'duel') {
+    if (target) {
       state.phase = 'duel';
       state.duel = { attacker: p.id, defender: target.id, to: legal.to.slice(), turn: legal.turn };
       return { type: 'duel', attacker: p.id, defender: target.id };
@@ -322,23 +321,14 @@
     p.r = legal.to[0];
     p.c = legal.to[1];
     if (legal.turn) p.dir = -p.dir;
-    var result = { type: 'move', id: p.id, captured: null, win: false, turned: legal.turn };
-    if (target) {
-      target.alive = false;
-      state.battled = true;
-      result.captured = target.id;
-      if (target.commander) {
-        finish(state, p.team, 'commander');
-        result.win = true;
-      }
-    }
-    if (state.phase !== 'over') state.phase = 'moved';
-    return result;
+    state.phase = 'moved';
+    return { type: 'move', id: p.id, turned: legal.turn };
   }
 
   /**
-   * Duel option: both Romans roll, the higher roll wins and the loser is out.
-   * A tie means roll again (returns { tie: true }).
+   * Battle: both players roll, the higher number wins and the other Roman is
+   * out. The winning attacker takes the square. A tie means roll again
+   * (returns { tie: true }).
    */
   function resolveDuel(state, attackerRoll, defenderRoll) {
     if (state.phase !== 'duel' || !state.duel) throw new Error('No battle to resolve');

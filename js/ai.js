@@ -1,9 +1,12 @@
 /*
  * Who's the Better Roman? - computer opponent.
  *
- * "easy"   mostly picks random moves, but usually spots a winning hit.
+ * "easy"   mostly picks random moves, but usually attacks a Commander it can reach.
  * "tricky" looks one turn ahead: it hunts the enemy Commander, keeps its own
  *          Commander out of reach and avoids leaving Romans where they can be hit.
+ *
+ * Every attack is a dice battle that the attacker wins half the time, so it
+ * weighs what it could win against the Roman it could lose.
  */
 (function (root, factory) {
   var isNode = typeof module === 'object' && module.exports;
@@ -49,15 +52,11 @@
   function scoreMove(state, m, rng) {
     var me = state.turn;
     var foe = R.enemyOf(me);
-    var duel = state.battle === 'duel';
     var p = R.getPiece(state, m.id);
     var target = m.target ? R.getPiece(state, m.target) : null;
     var score = 0;
 
-    if (target) {
-      if (duel) score += 0.5 * value(target) - 0.5 * value(p);
-      else score += target.commander ? 100000 : SOLDIER_VALUE * 1.2;
-    }
+    if (target) score += 0.5 * value(target) - 0.5 * value(p);
 
     // Look at the board after the move (assume the hit works).
     var sim = R.clone(state);
@@ -66,7 +65,7 @@
     sp.r = m.to[0];
     sp.c = m.to[1];
 
-    var danger = duel ? 0.5 : 1;
+    var danger = 0.5; // an attacker only wins half of its battles
     var myCmd = R.commanderOf(sim, me);
     if (myCmd) score -= threat(sim, myCmd.r, myCmd.c, foe) * COMMANDER_VALUE * 0.8 * danger;
     if (!sp.commander) score -= threat(sim, sp.r, sp.c, foe) * SOLDIER_VALUE * danger;
