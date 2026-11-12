@@ -1,0 +1,16 @@
+{
+  "name": "Who's the Better Roman?",
+  "short_name": "Better Roman",
+  "description": "A dice battle board game for two teams of Romans. Play with a friend on one phone or against the computer.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#63bdf3",
+  "theme_color": "#3f2612",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

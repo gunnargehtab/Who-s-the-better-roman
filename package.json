@@ -1,0 +1,13 @@
+{
+  "name": "whos-the-better-roman",
+  "version": "1.0.0",
+  "description": "A dice battle board game for two teams of Romans, playable on phones.",
+  "private": true,
+  "scripts": {
+    "test": "node --test",
+    "start": "python3 -m http.server 8000"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

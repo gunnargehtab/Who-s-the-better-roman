@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Who's the Better Roman?</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="A dice battle board game for two teams of Romans. Play with a friend on one phone or against the computer.">
+<meta name="theme-color" content="#3f2612">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Better Roman">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="sky" aria-hidden="true"><div class="sky-art sky-stars"></div><div class="sky-art sky-far"></div><div class="sky-art sky-near"></div></div>
+
+<main class="app" id="app" aria-label="Who's the Better Roman? game board">
+  <header class="topbar">
+    <button class="icon-btn" id="btn-menu" type="button" aria-label="Pause menu"><span class="ico" data-icon="menu"></span></button>
+    <p class="topbar-title" id="topbar-title">Who's the Better Roman?</p>
+    <button class="icon-btn" id="btn-sound" type="button" aria-label="Sound" aria-pressed="true"><span class="ico" data-icon="soundOn"></span></button>
+  </header>
+
+  <section class="dock" id="dock-top" aria-label="Top team"></section>
+
+  <div class="board-wrap" id="board-wrap">
+    <div class="board" id="board">
+      <div class="grid" id="grid"></div>
+      <div class="layer pieces" id="pieces"></div>
+      <div class="layer fx" id="fx" aria-hidden="true"></div>
+      <div class="banner" id="banner" hidden><span></span></div>
+    </div>
+  </div>
+
+  <section class="dock" id="dock-bottom" aria-label="Bottom team"></section>
+</main>
+
+<template id="dock-template">
+  <div class="dock-main">
+    <div class="dock-head">
+      <img class="dock-helmet" alt="" draggable="false">
+      <span class="dock-name"></span>
+      <span class="dock-tag"></span>
+      <span class="dock-romans" role="img"></span>
+    </div>
+    <p class="dock-hint" aria-live="polite"></p>
+  </div>
+  <button class="die-btn" type="button">
+    <img class="die-img" alt="" draggable="false">
+    <span class="die-badge" hidden><span class="ico"></span><span class="die-num"></span></span>
+  </button>
+</template>
+
+<!-- Title screen -->
+<section class="screen screen-title" id="screen-title" aria-label="Main menu">
+  <div class="title-card">
+    <h1 class="logo"><span>Who's the</span> <span class="logo-big">Better</span> <span class="logo-big">Roman?</span></h1>
+    <canvas class="hero" id="hero" width="76" height="40" aria-hidden="true"></canvas>
+    <p class="tagline">Roll the dice, march your Romans and knock out the other team's Commander!</p>
+    <div class="menu">
+      <button class="btn btn-primary" id="btn-continue" type="button" hidden><span class="ico" data-icon="play"></span>Continue game</button>
+      <button class="btn btn-primary" id="btn-2p" type="button"><span class="ico" data-icon="players"></span>2 Players</button>
+      <button class="btn" id="btn-1p" type="button"><span class="ico" data-icon="robot"></span>1 Player vs Computer</button>
+      <div class="menu-row">
+        <button class="btn btn-small" id="btn-rules" type="button"><span class="ico" data-icon="help"></span>How to play</button>
+        <button class="btn btn-small" id="btn-settings" type="button"><span class="ico" data-icon="gear"></span>Settings</button>
+      </div>
+    </div>
+    <p class="credit">Made from a hand-drawn cardboard board game.</p>
+  </div>
+</section>
+
+<!-- 1 player setup -->
+<section class="screen" id="screen-solo" hidden aria-labelledby="solo-title">
+  <div class="panel">
+    <h2 id="solo-title">Pick your team</h2>
+    <div class="choices" role="radiogroup" aria-label="Your team">
+      <button class="choice team-purple" type="button" role="radio" data-team="purple"><img alt="" data-art="roman:purple:5"><span>Purple</span></button>
+      <button class="choice team-blue" type="button" role="radio" data-team="blue"><img alt="" data-art="roman:blue:2"><span>Blue</span></button>
+    </div>
+    <h3>Computer</h3>
+    <div class="choices" role="radiogroup" aria-label="Computer level">
+      <button class="choice" type="button" role="radio" data-level="easy"><span class="choice-big">Easy</span><span class="choice-note">Good for learning</span></button>
+      <button class="choice" type="button" role="radio" data-level="tricky"><span class="choice-big">Tricky</span><span class="choice-note">Plays to win</span></button>
+    </div>
+    <div class="panel-actions">
+      <button class="btn" type="button" data-close>Back</button>
+      <button class="btn btn-primary" id="btn-solo-start" type="button"><span class="ico" data-icon="play"></span>Start</button>
+    </div>
+  </div>
+</section>
+
+<!-- How to play -->
+<section class="screen" id="screen-rules" hidden aria-labelledby="rules-title">
+  <div class="panel panel-rules">
+    <h2 id="rules-title">How to play</h2>
+    <ol class="rules">
+      <li>
+        <div class="rule-art"><img alt="" data-art="roman:purple:3"><img alt="" data-art="roman:blue:4"></div>
+        <p><b>Two teams:</b> Purple and Blue. Each team has 6 Romans on its Start row.</p>
+      </li>
+      <li>
+        <div class="rule-art"><img alt="" data-art="commander:blue:5"></div>
+        <p><b>Pick a Commander.</b> Tap one of your Romans to make it your Commander. Keep it safe!</p>
+      </li>
+      <li>
+        <div class="rule-art"><img alt="" data-art="die:0"></div>
+        <p><b>Who starts?</b> Both players roll. The higher roll goes first.</p>
+      </li>
+      <li>
+        <div class="rule-art"><img alt="" data-art="die:1"><img alt="" data-art="die:2"><img alt="" data-art="die:3"><span class="ico rule-ico" data-icon="sides"></span></div>
+        <p><b>Roll 1, 2 or 3:</b> move one Roman exactly that many squares <b>left or right</b>.</p>
+      </li>
+      <li>
+        <div class="rule-art"><img alt="" data-art="die:4"><img alt="" data-art="die:5"><img alt="" data-art="die:6"><span class="ico rule-ico" data-icon="up"></span></div>
+        <p><b>Roll 4, 5 or 6:</b> march one Roman exactly that many squares <b>forward</b>. If the board ends first, it stops on the last row and <b>turns around</b>.</p>
+      </li>
+      <li>
+        <div class="rule-art"><span class="ico rule-ico rule-ico-big" data-icon="swords"></span></div>
+        <p><b>Bonk!</b> Land on an enemy Roman to knock it out.</p>
+      </li>
+      <li>
+        <div class="rule-art"><img class="tile-img" alt="" data-art="tile:W"><img class="tile-img" alt="" data-art="tile:X"></div>
+        <p><b>Romans can't swim.</b> You can't stop on the water or the black rock, but you can jump over them and over other Romans.</p>
+      </li>
+      <li>
+        <div class="rule-art"><span class="ico rule-ico rule-ico-big rule-gold" data-icon="crown"></span></div>
+        <p><b>Win:</b> knock out the other team's Commander!</p>
+      </li>
+    </ol>
+    <div class="rules-extra">
+      <p><b>Dice duel</b> (turn it on in Settings): when a Roman lands on an enemy, both teams roll and the higher roll wins the battle.</p>
+      <p><b>Stuck?</b> If no Roman can ever reach a Commander, or nobody battles for 40 turns, the team with more Romans left wins.</p>
+    </div>
+    <div class="panel-actions">
+      <button class="btn btn-primary" type="button" data-close>Got it!</button>
+    </div>
+  </div>
+</section>
+
+<!-- Settings -->
+<section class="screen" id="screen-settings" hidden aria-labelledby="settings-title">
+  <div class="panel">
+    <h2 id="settings-title">Settings</h2>
+    <div class="setting">
+      <p class="setting-label" id="lbl-sound">Sound</p>
+      <div class="seg" role="radiogroup" aria-labelledby="lbl-sound">
+        <button type="button" role="radio" data-setting="sound" data-value="on">On</button>
+        <button type="button" role="radio" data-setting="sound" data-value="off">Off</button>
+      </div>
+    </div>
+    <div class="setting">
+      <p class="setting-label" id="lbl-battle">When Romans meet</p>
+      <div class="seg" role="radiogroup" aria-labelledby="lbl-battle">
+        <button type="button" role="radio" data-setting="battle" data-value="bonk">Bonk!</button>
+        <button type="button" role="radio" data-setting="battle" data-value="duel">Dice duel</button>
+      </div>
+      <p class="setting-help" id="battle-help"></p>
+    </div>
+    <div class="setting">
+      <p class="setting-label" id="lbl-seats">2 players sit</p>
+      <div class="seg" role="radiogroup" aria-labelledby="lbl-seats">
+        <button type="button" role="radio" data-setting="seats" data-value="side">Side by side</button>
+        <button type="button" role="radio" data-setting="seats" data-value="across">Across a table</button>
+      </div>
+      <p class="setting-help">Across a table turns the top team's panel around to face them.</p>
+    </div>
+    <div class="panel-actions">
+      <button class="btn btn-primary" type="button" data-close>Done</button>
+    </div>
+  </div>
+</section>
+
+<!-- Pause menu -->
+<section class="screen" id="screen-pause" hidden aria-labelledby="pause-title">
+  <div class="panel">
+    <h2 id="pause-title">Paused</h2>
+    <div class="menu">
+      <button class="btn btn-primary" type="button" data-close><span class="ico" data-icon="play"></span>Keep playing</button>
+      <button class="btn" id="btn-rules-2" type="button"><span class="ico" data-icon="help"></span>How to play</button>
+      <button class="btn" id="btn-settings-2" type="button"><span class="ico" data-icon="gear"></span>Settings</button>
+      <button class="btn" id="btn-restart" type="button"><span class="ico" data-icon="players"></span>New game</button>
+      <button class="btn" id="btn-home" type="button"><span class="ico" data-icon="home"></span>Main menu</button>
+    </div>
+  </div>
+</section>
+
+<!-- Confirm -->
+<section class="screen" id="screen-confirm" hidden aria-labelledby="confirm-title">
+  <div class="panel">
+    <h2 id="confirm-title">Start a new game?</h2>
+    <p class="panel-text" id="confirm-text">This game will end.</p>
+    <div class="panel-actions">
+      <button class="btn" id="confirm-no" type="button">No</button>
+      <button class="btn btn-danger" id="confirm-yes" type="button">Yes</button>
+    </div>
+  </div>
+</section>
+
+<!-- Dice duel -->
+<section class="screen screen-duel" id="screen-duel" hidden aria-labelledby="duel-title">
+  <div class="panel duel-panel">
+    <h2 id="duel-title">Battle!</h2>
+    <div class="duel-row">
+      <div class="duelist" id="duel-a"><img class="duel-roman" alt=""><img class="duel-die" alt=""><span class="duel-name"></span></div>
+      <span class="ico duel-swords" data-icon="swords"></span>
+      <div class="duelist" id="duel-d"><img class="duel-roman" alt=""><img class="duel-die" alt=""><span class="duel-name"></span></div>
+    </div>
+    <p class="duel-msg" id="duel-msg" aria-live="polite"></p>
+    <div class="panel-actions">
+      <button class="btn btn-primary" id="btn-duel-roll" type="button">Roll the battle dice!</button>
+    </div>
+  </div>
+</section>
+
+<!-- Game over -->
+<section class="screen screen-win" id="screen-win" hidden aria-labelledby="win-title">
+  <div class="confetti" id="confetti" aria-hidden="true"></div>
+  <div class="panel win-panel">
+    <div class="win-romans" id="win-romans"></div>
+    <h2 class="win-title" id="win-title"></h2>
+    <p class="win-sub" id="win-sub"></p>
+    <p class="win-why" id="win-why"></p>
+    <div class="panel-actions">
+      <button class="btn" id="btn-win-menu" type="button"><span class="ico" data-icon="home"></span>Menu</button>
+      <button class="btn btn-primary" id="btn-win-again" type="button"><span class="ico" data-icon="play"></span>Play again</button>
+    </div>
+  </div>
+</section>
+
+<script src="js/rules.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/art.js"></script>
+<script src="js/sound.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
